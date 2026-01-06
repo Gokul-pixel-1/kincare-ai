@@ -7,55 +7,52 @@ def predict_diseases_and_recommendations(data):
     cholesterol = data["cholesterol"]
 
     diseases = {}
-    recommendations = []
+
+    # Grouped recommendations (doctor-friendly)
+    recommendations = {
+        "Diet": [],
+        "Exercise": [],
+        "Monitoring": [],
+        "Medical_Advice": []
+    }
 
     # ---------------- Diabetes ----------------
     if sugar < 140:
         diseases["Diabetes"] = "Low"
     elif sugar < 200:
         diseases["Diabetes"] = "Medium"
-        recommendations.append("Reduce sugar and refined carbohydrates")
+        recommendations["Diet"].append("Reduce sugar and refined carbohydrates")
     else:
         diseases["Diabetes"] = "High"
-        recommendations.extend([
-            "Strict low-sugar diet",
-            "Walk 30–45 minutes daily",
-            "Blood sugar check every 3 months"
-        ])
+        recommendations["Diet"].append("Strict low-sugar diet")
+        recommendations["Exercise"].append("Walk 30–45 minutes daily")
+        recommendations["Monitoring"].append("Blood sugar check every 3 months")
 
     # ---------------- Hypertension ----------------
     if sys_bp < 120 and dia_bp < 80:
         diseases["Hypertension"] = "Low"
     elif sys_bp < 140 or dia_bp < 90:
         diseases["Hypertension"] = "Medium"
-        recommendations.extend([
-            "Reduce salt intake",
-            "Monitor BP every month"
-        ])
+        recommendations["Diet"].append("Reduce salt intake")
+        recommendations["Monitoring"].append("Monitor BP every month")
     else:
         diseases["Hypertension"] = "High"
-        recommendations.extend([
-            "Low-sodium diet",
-            "Daily BP monitoring",
-            "Consult doctor for BP management"
-        ])
+        recommendations["Diet"].append("Low-sodium diet")
+        recommendations["Monitoring"].append("Daily BP monitoring")
+        recommendations["Medical_Advice"].append("Consult doctor for BP management")
 
     # ---------------- Obesity Status (BMI-based) ----------------
     if bmi < 25:
         diseases["Obesity Status (BMI)"] = "Normal"
     elif bmi < 30:
         diseases["Obesity Status (BMI)"] = "Overweight"
-        recommendations.extend([
-            "Increase physical activity",
-            "Avoid junk and fried foods"
-        ])
+        recommendations["Exercise"].append("Increase physical activity")
+        recommendations["Diet"].append("Avoid junk and fried foods")
     else:
         diseases["Obesity Status (BMI)"] = "Obese"
-        recommendations.extend([
-            "Weight reduction diet",
-            "45 minutes walking or exercise daily",
-            "Regular weight monitoring"
-        ])
+        recommendations["Diet"].append("Weight reduction diet")
+        recommendations["Exercise"].append("45 minutes walking or exercise daily")
+        recommendations["Monitoring"].append("Regular weight monitoring")
 
     # ---------------- Obesity Risk (Metabolic – No BMI) ----------------
     metabolic_risk_count = 0
@@ -72,14 +69,16 @@ def predict_diseases_and_recommendations(data):
         diseases["Obesity Risk (Metabolic)"] = "Low"
     elif metabolic_risk_count == 2:
         diseases["Obesity Risk (Metabolic)"] = "Medium"
-        recommendations.append("Lifestyle modification to prevent metabolic obesity")
+        recommendations["Medical_Advice"].append(
+            "Lifestyle modification to prevent metabolic obesity"
+        )
     else:
         diseases["Obesity Risk (Metabolic)"] = "High"
-        recommendations.extend([
+        recommendations["Medical_Advice"].extend([
             "Comprehensive lifestyle intervention recommended",
-            "Monitor metabolic parameters regularly",
             "Preventive obesity counseling advised"
         ])
+        recommendations["Monitoring"].append("Monitor metabolic parameters regularly")
 
     # ---------------- Heart Disease ----------------
     heart_risk_factors = 0
@@ -94,17 +93,16 @@ def predict_diseases_and_recommendations(data):
         diseases["Heart Disease"] = "Low"
     elif heart_risk_factors == 1:
         diseases["Heart Disease"] = "Medium"
-        recommendations.append("Annual heart health screening")
+        recommendations["Monitoring"].append("Annual heart health screening")
     else:
         diseases["Heart Disease"] = "High"
-        recommendations.extend([
-            "Heart-friendly diet",
-            "Avoid smoking and alcohol",
+        recommendations["Diet"].append("Heart-friendly diet")
+        recommendations["Medical_Advice"].append(
             "ECG and cardiac consultation recommended"
-        ])
+        )
 
-    # Remove duplicate recommendations
-    recommendations = list(set(recommendations))
+    # Remove empty recommendation categories
+    recommendations = {k: v for k, v in recommendations.items() if v}
 
     return {
         "diseases": diseases,
