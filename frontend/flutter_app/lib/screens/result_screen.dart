@@ -1,30 +1,31 @@
 import 'package:flutter/material.dart';
 
 class ResultScreen extends StatelessWidget {
-  final Map response;
-  ResultScreen({required this.response});
+  final Map res;
+  ResultScreen({required this.res});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(context) {
     return Scaffold(
-      appBar: AppBar(title: Text("Prediction Results")),
+      backgroundColor: Colors.white,
+      appBar: AppBar(title: Text("Disease Prediction Result")),
       body: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: EdgeInsets.all(18),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text("Disease Risk Scores:", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            Text("Risk Scores", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
             SizedBox(height: 10),
-            Text("Diabetes: ${response['risks']['diabetes']}%"),
-            Text("Heart Disease: ${response['risks']['heart']}%"),
-            Text("Hypertension: ${response['risks']['hypertension']}%"),
-            Text("Obesity: ${response['risks']['obesity']}%"),
+            Text("Diabetes: ${res['risks']['diabetes']}%"),
+            Text("Heart Disease: ${res['risks']['heart']}%"),
+            Text("Hypertension: ${res['risks']['hypertension']}%"),
+            Text("Obesity: ${res['risks']['obesity']}%"),
             SizedBox(height: 20),
-            Text("Doctor Recommendations:", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            Text("Recommendations", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
             SizedBox(height: 10),
-            ...response['recommendations'].map<Widget>((rec) => Text("• $rec")).toList(),
-            SizedBox(height: 20),
-            Text("Note: This is a doctor decision-support system.", style: TextStyle(fontSize: 12, color: Colors.grey)),
+            ...res['recommendations'].map<Widget>((r) => Text("• $r")).toList(),
+            SizedBox(height: 25),
+            Text("Note: Decision support system for doctors", style: TextStyle(fontSize: 12, color: Colors.grey))
           ],
         ),
       ),

@@ -2,46 +2,46 @@ import 'package:flutter/material.dart';
 import 'input_screen.dart';
 
 class LoginScreen extends StatelessWidget {
-  final TextEditingController userController = TextEditingController();
-  final TextEditingController passController = TextEditingController();
+  final TextEditingController user = TextEditingController();
+  final TextEditingController pass = TextEditingController();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       body: Padding(
-        padding: const EdgeInsets.all(20.0),
+        padding: EdgeInsets.all(20),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(
-              "Kincare AI – Doctor Login",
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-            ),
-            SizedBox(height: 20),
+            Icon(Icons.local_hospital, size: 90),
+            SizedBox(height: 12),
+            Text("Kincare AI – Doctor Login",
+                style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold)),
+            SizedBox(height: 25),
             TextField(
-              controller: userController,
-              decoration: InputDecoration(labelText: "Username"),
+              controller: user,
+              decoration: InputDecoration(
+                labelText: "Username",
+                border: OutlineInputBorder(),
+              ),
             ),
+            SizedBox(height: 15),
             TextField(
-              controller: passController,
-              decoration: InputDecoration(labelText: "Password"),
+              controller: pass,
               obscureText: true,
+              decoration: InputDecoration(
+                labelText: "Password",
+                border: OutlineInputBorder(),
+              ),
             ),
             SizedBox(height: 20),
             ElevatedButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => InputScreen()),
-                );
-              },
-              child: Text("Login"),
+              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => InputScreen())),
+              child: Text("Login", style: TextStyle(fontSize: 16)),
             ),
             SizedBox(height: 10),
-            Text(
-              "Note: Dummy login for MVP",
-              style: TextStyle(fontSize: 12, color: Colors.grey),
-            ),
+            Text("Dummy login for MVP", style: TextStyle(fontSize: 12, color: Colors.grey)),
           ],
         ),
       ),
