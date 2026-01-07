@@ -50,7 +50,7 @@ def get_regional_diet(disease, region):
         "North": {
             "Diabetes": [
                 "Limit roti quantity",
-                "Avoid sweets and sugar drinks"
+                "Avoid sweets and sugary drinks"
             ],
             "Hypertension": [
                 "Reduce salt and butter usage",
@@ -155,7 +155,6 @@ def predict_diseases_and_recommendations(data):
     dia_bp = data["diastolic_bp"]
     cholesterol = data["cholesterol"]
 
-    # OPTIONAL input (backward compatible)
     state = data.get("state", "Tamil Nadu")
     region = get_region_from_state(state)
 
@@ -252,7 +251,6 @@ def predict_diseases_and_recommendations(data):
             "ECG and cardiac consultation recommended"
         )
 
-    # Remove empty categories
     recommendations = {k: v for k, v in recommendations.items() if v}
 
     return {
