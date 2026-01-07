@@ -1,45 +1,46 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
-from fastapi.middleware.cors import CORSMiddleware
+from typing import Optional
 from disease_engine import predict_diseases_and_recommendations
-
 
 app = FastAPI(title="Kincare AI Backend")
 
-
-# ------------------- Allow Flutter/Web access -------------------
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# In-memory family storage (demo purpose)
+family_records = {}
 
 
-# ------------------- Input Data Model -------------------
 class PatientData(BaseModel):
-    age: float
+    age: int
     bmi: float
     sugar: float
-    systolic_bp: float
-    diastolic_bp: float
+    systolic_bp: int
+    diastolic_bp: int
     cholesterol: float
-
-    family_history_diabetes: str | None = "none"
-    family_history_heart: str | None = "none"
-    family_history_bp: str | None = "none"
-    family_history_obesity: str | None = "none"
+    state: Optional[str] = None
+    family_id: Optional[str] = None
 
 
-# ------------------- Root Check Endpoint -------------------
-@app.get("/")
-def root():
-    return {"message": "Kincare AI Backend is running"}
-
-
-# ------------------- Prediction API -------------------
 @app.post("/predict")
 def predict(data: PatientData):
-    result = predict_diseases_and_recommendations(data.model_dump())
-    return result
+    result = predict_diseases_and_recommendations(data.dict())
+
+    family_alert = None
+
+    if data.family_id:
+        family = family_records.get(data.family_id, [])
+        family.append(result["diseases"])
+        family_records[data.family_id] = family
+
+        for disease, risk in result["diseases"].items():
+            if risk == "High":
+                family_alert = (
+                    f"High {disease} risk detected. "
+                    "Recommend screening other family members."
+                )
+                break
+
+    return {
+        "status": "success",
+        "result": result,
+        "family_alert": family_alert
+    }
