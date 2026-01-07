@@ -1,14 +1,35 @@
 def predict_diseases_and_recommendations(data):
-    age = data["age"]
-    bmi = data["bmi"]
-    sugar = data["sugar"]
-    sys_bp = data["systolic_bp"]
-    dia_bp = data["diastolic_bp"]
-    cholesterol = data["cholesterol"]
+
+    # ---------- SAFE DATA READING ----------
+    try:
+        age = float(data["age"])
+        bmi = float(data["bmi"])
+        sugar = float(data["sugar"])
+        sys_bp = float(data["systolic_bp"])
+        dia_bp = float(data["diastolic_bp"])
+        cholesterol = float(data["cholesterol"])
+    except:
+        return {
+            "status": "error",
+            "message": "Invalid or missing input values. Please check input format."
+        }
+
+    # ---------- VALIDATION ----------
+    errors = []
+    if age <= 0: errors.append("Age must be positive")
+    if bmi <= 0: errors.append("BMI must be positive")
+    if sugar <= 0: errors.append("Blood sugar must be positive")
+    if sys_bp <= 0 or dia_bp <= 0: errors.append("Blood pressure must be positive")
+    if cholesterol <= 0: errors.append("Cholesterol must be positive")
+
+    if errors:
+        return {"status": "error", "errors": errors}
+
 
     diseases = {}
+    reasons = {}
+    risk_scores = {}
 
-    # Grouped recommendations (doctor-friendly)
     recommendations = {
         "Diet": [],
         "Exercise": [],
@@ -16,95 +37,150 @@ def predict_diseases_and_recommendations(data):
         "Medical_Advice": []
     }
 
-    # ---------------- Diabetes ----------------
+    # ============================================================
+    # ----------------------- DIABETES ---------------------------
+    # ============================================================
+    diabetes_score = 0
+    diabetes_reasons = []
+
     if sugar < 140:
-        diseases["Diabetes"] = "Low"
+        diabetes_score += 10
     elif sugar < 200:
-        diseases["Diabetes"] = "Medium"
+        diabetes_score += 60
+        diabetes_reasons.append("Blood sugar above normal range")
         recommendations["Diet"].append("Reduce sugar and refined carbohydrates")
     else:
-        diseases["Diabetes"] = "High"
+        diabetes_score += 90
+        diabetes_reasons.append("High blood sugar indicates diabetes risk")
         recommendations["Diet"].append("Strict low-sugar diet")
         recommendations["Exercise"].append("Walk 30–45 minutes daily")
         recommendations["Monitoring"].append("Blood sugar check every 3 months")
 
-    # ---------------- Hypertension ----------------
-    if sys_bp < 120 and dia_bp < 80:
-        diseases["Hypertension"] = "Low"
-    elif sys_bp < 140 or dia_bp < 90:
-        diseases["Hypertension"] = "Medium"
-        recommendations["Diet"].append("Reduce salt intake")
-        recommendations["Monitoring"].append("Monitor BP every month")
+    if bmi >= 30:
+        diabetes_score += 10
+        diabetes_reasons.append("High BMI increases diabetes risk")
+
+    diabetes_score = min(diabetes_score, 100)
+    risk_scores["Diabetes"] = diabetes_score
+
+    if diabetes_score < 30:
+        diseases["Diabetes"] = "Low"
+    elif diabetes_score < 70:
+        diseases["Diabetes"] = "Medium"
     else:
-        diseases["Hypertension"] = "High"
+        diseases["Diabetes"] = "High"
+
+    reasons["Diabetes"] = diabetes_reasons
+
+
+    # ============================================================
+    # --------------------- HYPERTENSION -------------------------
+    # ============================================================
+    bp_score = 0
+    bp_reasons = []
+
+    if sys_bp >= 140 or dia_bp >= 90:
+        bp_score += 85
+        bp_reasons.append("Blood pressure is in hypertension range")
         recommendations["Diet"].append("Low-sodium diet")
         recommendations["Monitoring"].append("Daily BP monitoring")
         recommendations["Medical_Advice"].append("Consult doctor for BP management")
+    elif sys_bp >= 120 or dia_bp >= 80:
+        bp_score += 50
+        bp_reasons.append("Blood pressure trending high")
+        recommendations["Monitoring"].append("Monitor BP every month")
+    else:
+        bp_score += 10
 
-    # ---------------- Obesity Status (BMI-based) ----------------
+    bp_score = min(bp_score, 100)
+    risk_scores["Hypertension"] = bp_score
+
+    if bp_score < 30:
+        diseases["Hypertension"] = "Low"
+    elif bp_score < 70:
+        diseases["Hypertension"] = "Medium"
+    else:
+        diseases["Hypertension"] = "High"
+
+    reasons["Hypertension"] = bp_reasons
+
+
+    # ============================================================
+    # ----------------------- OBESITY (BMI) ----------------------
+    # ============================================================
+    obesity_score = 0
+    obesity_reasons = []
+
     if bmi < 25:
+        obesity_score += 10
         diseases["Obesity Status (BMI)"] = "Normal"
     elif bmi < 30:
+        obesity_score += 60
         diseases["Obesity Status (BMI)"] = "Overweight"
+        obesity_reasons.append("BMI in overweight range")
         recommendations["Exercise"].append("Increase physical activity")
         recommendations["Diet"].append("Avoid junk and fried foods")
     else:
+        obesity_score += 95
         diseases["Obesity Status (BMI)"] = "Obese"
+        obesity_reasons.append("BMI in obese range")
         recommendations["Diet"].append("Weight reduction diet")
         recommendations["Exercise"].append("45 minutes walking or exercise daily")
         recommendations["Monitoring"].append("Regular weight monitoring")
 
-    # ---------------- Obesity Risk (Metabolic – No BMI) ----------------
-    metabolic_risk_count = 0
-    if sugar >= 140:
-        metabolic_risk_count += 1
-    if sys_bp >= 140 or dia_bp >= 90:
-        metabolic_risk_count += 1
-    if cholesterol >= 240:
-        metabolic_risk_count += 1
-    if age >= 45:
-        metabolic_risk_count += 1
+    obesity_score = min(obesity_score, 100)
+    risk_scores["Obesity"] = obesity_score
+    reasons["Obesity"] = obesity_reasons
 
-    if metabolic_risk_count <= 1:
-        diseases["Obesity Risk (Metabolic)"] = "Low"
-    elif metabolic_risk_count == 2:
-        diseases["Obesity Risk (Metabolic)"] = "Medium"
-        recommendations["Medical_Advice"].append(
-            "Lifestyle modification to prevent metabolic obesity"
-        )
-    else:
-        diseases["Obesity Risk (Metabolic)"] = "High"
-        recommendations["Medical_Advice"].extend([
-            "Comprehensive lifestyle intervention recommended",
-            "Preventive obesity counseling advised"
-        ])
-        recommendations["Monitoring"].append("Monitor metabolic parameters regularly")
 
-    # ---------------- Heart Disease ----------------
-    heart_risk_factors = 0
+    # ============================================================
+    # ---------------- HEART DISEASE RISK ------------------------
+    # ============================================================
+    heart_score = 0
+    heart_reasons = []
+
     if age >= 45:
-        heart_risk_factors += 1
+        heart_score += 20
+        heart_reasons.append("Age ≥ 45 increases heart risk")
+
     if sys_bp >= 140:
-        heart_risk_factors += 1
-    if cholesterol >= 240:
-        heart_risk_factors += 1
+        heart_score += 30
+        heart_reasons.append("High blood pressure")
 
-    if heart_risk_factors == 0:
+    if cholesterol >= 240:
+        heart_score += 40
+        heart_reasons.append("High cholesterol level")
+
+    if bmi >= 30:
+        heart_score += 10
+        heart_reasons.append("Obesity increases heart risk")
+
+    heart_score = min(100, heart_score)
+    risk_scores["Heart Disease"] = heart_score
+
+    if heart_score < 30:
         diseases["Heart Disease"] = "Low"
-    elif heart_risk_factors == 1:
+    elif heart_score < 70:
         diseases["Heart Disease"] = "Medium"
-        recommendations["Monitoring"].append("Annual heart health screening")
     else:
         diseases["Heart Disease"] = "High"
+        recommendations["Medical_Advice"].append("ECG and cardiac consultation recommended")
         recommendations["Diet"].append("Heart-friendly diet")
-        recommendations["Medical_Advice"].append(
-            "ECG and cardiac consultation recommended"
-        )
 
-    # Remove empty recommendation categories
+
+    # ============================================================
+    # -------- REMOVE EMPTY RECOMMENDATION GROUPS ---------------
+    # ============================================================
     recommendations = {k: v for k, v in recommendations.items() if v}
 
+
     return {
+        "status": "success",
+        "risk_scores": risk_scores,
         "diseases": diseases,
+        "reasons": reasons,
         "recommendations": recommendations
     }
+
+
+   
