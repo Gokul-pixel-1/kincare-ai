@@ -1,40 +1,165 @@
-def predict_diseases_and_recommendations(data):
+# ---------- State to Region Mapping (India) ----------
+def get_region_from_state(state):
+    south = ["Tamil Nadu", "Kerala", "Karnataka", "Andhra Pradesh", "Telangana"]
+    north = ["Delhi", "Punjab", "Haryana", "Uttar Pradesh", "Uttarakhand", "Himachal Pradesh"]
+    west = ["Maharashtra", "Gujarat", "Rajasthan", "Goa"]
+    east = ["West Bengal", "Odisha", "Bihar", "Jharkhand"]
+    northeast = ["Assam", "Arunachal Pradesh", "Manipur", "Mizoram",
+                 "Nagaland", "Tripura", "Meghalaya", "Sikkim"]
+    central = ["Madhya Pradesh", "Chhattisgarh"]
 
-    # ---------- SAFE INPUT READING ----------
-    try:
-        age = float(data["age"])
-        bmi = float(data["bmi"])
-        sugar = float(data["sugar"])
-        sys_bp = float(data["systolic_bp"])
-        dia_bp = float(data["diastolic_bp"])
-        cholesterol = float(data["cholesterol"])
-    except:
-        return {
-            "status": "error",
-            "message": "Invalid or missing input values. Please check input format."
+    if state in south:
+        return "South"
+    elif state in north:
+        return "North"
+    elif state in west:
+        return "West"
+    elif state in east:
+        return "East"
+    elif state in northeast:
+        return "NorthEast"
+    elif state in central:
+        return "Central"
+    else:
+        return "Generic"
+
+
+# ---------- Region-based Diet Plans ----------
+def get_regional_diet(disease, region):
+    diets = {
+        "South": {
+            "Diabetes": [
+                "Prefer idli or dosa with less oil",
+                "Use millets instead of white rice",
+                "Avoid sweets and sugary drinks"
+            ],
+            "Hypertension": [
+                "Reduce salt in sambar and rasam",
+                "Avoid pickles and papads"
+            ],
+            "Obesity": [
+                "Avoid fried snacks like vada and bajji",
+                "Prefer steamed foods"
+            ],
+            "Heart Disease": [
+                "Limit oil usage",
+                "Avoid deep-fried foods"
+            ]
+        },
+
+        "North": {
+            "Diabetes": [
+                "Limit roti quantity",
+                "Avoid sweets and sugar drinks"
+            ],
+            "Hypertension": [
+                "Reduce salt and butter usage",
+                "Avoid pickles"
+            ],
+            "Obesity": [
+                "Avoid fried snacks",
+                "Control portion size"
+            ],
+            "Heart Disease": [
+                "Avoid ghee-heavy foods",
+                "Prefer vegetables and fruits"
+            ]
+        },
+
+        "West": {
+            "Diabetes": [
+                "Limit sugary snacks",
+                "Control portion size"
+            ],
+            "Hypertension": [
+                "Reduce salt intake",
+                "Avoid processed foods"
+            ],
+            "Obesity": [
+                "Avoid fried snacks",
+                "Prefer home-cooked food"
+            ],
+            "Heart Disease": [
+                "Limit oil and salt",
+                "Include fruits"
+            ]
+        },
+
+        "East": {
+            "Diabetes": [
+                "Reduce white rice intake",
+                "Avoid sweets"
+            ],
+            "Hypertension": [
+                "Reduce salt",
+                "Avoid fried foods"
+            ],
+            "Obesity": [
+                "Control rice portion",
+                "Avoid fried snacks"
+            ],
+            "Heart Disease": [
+                "Avoid oily foods",
+                "Increase vegetables"
+            ]
+        },
+
+        "NorthEast": {
+            "Diabetes": [
+                "Avoid sugary foods",
+                "Include vegetables and fruits"
+            ],
+            "Hypertension": [
+                "Reduce salt",
+                "Avoid smoked foods"
+            ],
+            "Obesity": [
+                "Control portions",
+                "Regular physical activity"
+            ],
+            "Heart Disease": [
+                "Avoid fatty meats",
+                "Include fruits"
+            ]
+        },
+
+        "Central": {
+            "Diabetes": [
+                "Limit rice and sweets",
+                "Include vegetables"
+            ],
+            "Hypertension": [
+                "Reduce salt",
+                "Avoid fried snacks"
+            ],
+            "Obesity": [
+                "Avoid oily foods",
+                "Control portion size"
+            ],
+            "Heart Disease": [
+                "Avoid ghee-heavy foods",
+                "Prefer vegetables"
+            ]
         }
+    }
 
-    # ---------- FAMILY HISTORY INPUT ----------
-    fh_diabetes = data.get("family_history_diabetes", "none")
-    fh_heart = data.get("family_history_heart", "none")
-    fh_bp = data.get("family_history_bp", "none")
-    fh_obesity = data.get("family_history_obesity", "none")
+    return diets.get(region, {}).get(disease, [])
 
-    # ---------- VALIDATION ----------
-    errors = []
-    if age <= 0: errors.append("Age must be positive")
-    if bmi <= 0: errors.append("BMI must be positive")
-    if sugar <= 0: errors.append("Blood sugar must be positive")
-    if sys_bp <= 0 or dia_bp <= 0: errors.append("Blood pressure must be positive")
-    if cholesterol <= 0: errors.append("Cholesterol must be positive")
 
-    if errors:
-        return {"status": "error", "errors": errors}
+# ---------- Main Prediction Function ----------
+def predict_diseases_and_recommendations(data):
+    age = data["age"]
+    bmi = data["bmi"]
+    sugar = data["sugar"]
+    sys_bp = data["systolic_bp"]
+    dia_bp = data["diastolic_bp"]
+    cholesterol = data["cholesterol"]
 
+    # OPTIONAL input (backward compatible)
+    state = data.get("state", "Tamil Nadu")
+    region = get_region_from_state(state)
 
     diseases = {}
-    reasons = {}
-    risk_scores = {}
 
     recommendations = {
         "Diet": [],
@@ -43,190 +168,94 @@ def predict_diseases_and_recommendations(data):
         "Medical_Advice": []
     }
 
-
-    # ============================================================
-    # ----------------------- DIABETES ---------------------------
-    # ============================================================
-    diabetes_score = 0
-    diabetes_reasons = []
-
+    # -------- Diabetes --------
     if sugar < 140:
-        diabetes_score += 10
+        diseases["Diabetes"] = "Low"
     elif sugar < 200:
-        diabetes_score += 60
-        diabetes_reasons.append("Blood sugar above normal range")
-        recommendations["Diet"].append("Reduce sugar and refined carbohydrates")
+        diseases["Diabetes"] = "Medium"
+        recommendations["Diet"].extend(get_regional_diet("Diabetes", region))
     else:
-        diabetes_score += 90
-        diabetes_reasons.append("High blood sugar indicates diabetes risk")
-        recommendations["Diet"].append("Strict low-sugar diet")
+        diseases["Diabetes"] = "High"
+        recommendations["Diet"].extend(get_regional_diet("Diabetes", region))
         recommendations["Exercise"].append("Walk 30–45 minutes daily")
         recommendations["Monitoring"].append("Blood sugar check every 3 months")
 
-    if bmi >= 30:
-        diabetes_score += 10
-        diabetes_reasons.append("High BMI increases diabetes risk")
-
-    # -------- FAMILY HISTORY BOOST --------
-    if fh_diabetes == "one_parent":
-        diabetes_score += 20
-        diabetes_reasons.append("Family history increases diabetes risk")
-    elif fh_diabetes == "both_parents":
-        diabetes_score += 35
-        diabetes_reasons.append("Strong genetic diabetes risk")
-    elif fh_diabetes == "sibling":
-        diabetes_score += 25
-        diabetes_reasons.append("Sibling with diabetes increases risk")
-
-    diabetes_score = min(diabetes_score, 100)
-    risk_scores["Diabetes"] = diabetes_score
-
-    if diabetes_score < 30:
-        diseases["Diabetes"] = "Low"
-    elif diabetes_score < 70:
-        diseases["Diabetes"] = "Medium"
-    else:
-        diseases["Diabetes"] = "High"
-
-    reasons["Diabetes"] = diabetes_reasons
-
-
-    # ============================================================
-    # --------------------- HYPERTENSION -------------------------
-    # ============================================================
-    bp_score = 0
-    bp_reasons = []
-
-    if sys_bp >= 140 or dia_bp >= 90:
-        bp_score += 85
-        bp_reasons.append("Blood pressure is in hypertension range")
-        recommendations["Diet"].append("Low-sodium diet")
-        recommendations["Monitoring"].append("Daily BP monitoring")
-        recommendations["Medical_Advice"].append("Consult doctor for BP management")
-    elif sys_bp >= 120 or dia_bp >= 80:
-        bp_score += 50
-        bp_reasons.append("Blood pressure trending high")
+    # -------- Hypertension --------
+    if sys_bp < 120 and dia_bp < 80:
+        diseases["Hypertension"] = "Low"
+    elif sys_bp < 140 or dia_bp < 90:
+        diseases["Hypertension"] = "Medium"
+        recommendations["Diet"].extend(get_regional_diet("Hypertension", region))
         recommendations["Monitoring"].append("Monitor BP every month")
     else:
-        bp_score += 10
-
-    # -------- FAMILY HISTORY BOOST --------
-    if fh_bp == "one_parent":
-        bp_score += 15
-        bp_reasons.append("Family history increases BP risk")
-    elif fh_bp == "both_parents":
-        bp_score += 25
-        bp_reasons.append("Strong family history of BP")
-
-    bp_score = min(bp_score, 100)
-    risk_scores["Hypertension"] = bp_score
-
-    if bp_score < 30:
-        diseases["Hypertension"] = "Low"
-    elif bp_score < 70:
-        diseases["Hypertension"] = "Medium"
-    else:
         diseases["Hypertension"] = "High"
+        recommendations["Diet"].extend(get_regional_diet("Hypertension", region))
+        recommendations["Monitoring"].append("Daily BP monitoring")
+        recommendations["Medical_Advice"].append("Consult doctor for BP management")
 
-    reasons["Hypertension"] = bp_reasons
-
-
-    # ============================================================
-    # ----------------------- OBESITY (BMI) ----------------------
-    # ============================================================
-    obesity_score = 0
-    obesity_reasons = []
-
+    # -------- Obesity Status (BMI) --------
     if bmi < 25:
-        obesity_score += 10
         diseases["Obesity Status (BMI)"] = "Normal"
     elif bmi < 30:
-        obesity_score += 60
         diseases["Obesity Status (BMI)"] = "Overweight"
-        obesity_reasons.append("BMI in overweight range")
+        recommendations["Diet"].extend(get_regional_diet("Obesity", region))
         recommendations["Exercise"].append("Increase physical activity")
-        recommendations["Diet"].append("Avoid junk and fried foods")
     else:
-        obesity_score += 95
         diseases["Obesity Status (BMI)"] = "Obese"
-        obesity_reasons.append("BMI in obese range")
-        recommendations["Diet"].append("Weight reduction diet")
+        recommendations["Diet"].extend(get_regional_diet("Obesity", region))
         recommendations["Exercise"].append("45 minutes walking or exercise daily")
         recommendations["Monitoring"].append("Regular weight monitoring")
 
-    # -------- FAMILY HISTORY BOOST --------
-    if fh_obesity == "one_parent":
-        obesity_score += 10
-        obesity_reasons.append("Family history increases obesity risk")
-    elif fh_obesity == "both_parents":
-        obesity_score += 20
-        obesity_reasons.append("Strong family history of obesity")
-
-    obesity_score = min(obesity_score, 100)
-    risk_scores["Obesity"] = obesity_score
-    reasons["Obesity"] = obesity_reasons
-
-
-    # ============================================================
-    # ---------------- HEART DISEASE RISK ------------------------
-    # ============================================================
-    heart_score = 0
-    heart_reasons = []
-
-    if age >= 45:
-        heart_score += 20
-        heart_reasons.append("Age ≥ 45 increases heart risk")
-
-    if sys_bp >= 140:
-        heart_score += 30
-        heart_reasons.append("High blood pressure")
-
+    # -------- Obesity Risk (Metabolic) --------
+    metabolic_risk = 0
+    if sugar >= 140:
+        metabolic_risk += 1
+    if sys_bp >= 140 or dia_bp >= 90:
+        metabolic_risk += 1
     if cholesterol >= 240:
-        heart_score += 40
-        heart_reasons.append("High cholesterol level")
+        metabolic_risk += 1
+    if age >= 45:
+        metabolic_risk += 1
 
-    if bmi >= 30:
-        heart_score += 10
-        heart_reasons.append("Obesity increases heart risk")
+    if metabolic_risk <= 1:
+        diseases["Obesity Risk (Metabolic)"] = "Low"
+    elif metabolic_risk == 2:
+        diseases["Obesity Risk (Metabolic)"] = "Medium"
+        recommendations["Medical_Advice"].append(
+            "Lifestyle modification to prevent metabolic obesity"
+        )
+    else:
+        diseases["Obesity Risk (Metabolic)"] = "High"
+        recommendations["Medical_Advice"].append(
+            "Comprehensive lifestyle intervention recommended"
+        )
+        recommendations["Monitoring"].append("Monitor metabolic parameters regularly")
 
-    # -------- FAMILY HISTORY BOOST --------
-    if fh_heart == "one_parent":
-        heart_score += 20
-        heart_reasons.append("Family history increases heart disease risk")
-    elif fh_heart == "both_parents":
-        heart_score += 30
-        heart_reasons.append("Strong family history of heart disease")
-    elif fh_heart == "early_attack":
-        heart_score += 40
-        heart_reasons.append("Early heart attack in family — very high risk")
-    elif fh_heart == "sibling":
-        heart_score += 25
-        heart_reasons.append("Sibling with heart disease — risk increases")
+    # -------- Heart Disease --------
+    heart_risk = 0
+    if age >= 45:
+        heart_risk += 1
+    if sys_bp >= 140:
+        heart_risk += 1
+    if cholesterol >= 240:
+        heart_risk += 1
 
-    heart_score = min(100, heart_score)
-    risk_scores["Heart Disease"] = heart_score
-
-    if heart_score < 30:
+    if heart_risk == 0:
         diseases["Heart Disease"] = "Low"
-    elif heart_score < 70:
+    elif heart_risk == 1:
         diseases["Heart Disease"] = "Medium"
+        recommendations["Monitoring"].append("Annual heart health screening")
     else:
         diseases["Heart Disease"] = "High"
-        recommendations["Medical_Advice"].append("ECG and cardiac consultation recommended")
-        recommendations["Diet"].append("Heart-friendly diet")
+        recommendations["Diet"].extend(get_regional_diet("Heart Disease", region))
+        recommendations["Medical_Advice"].append(
+            "ECG and cardiac consultation recommended"
+        )
 
-
-    # ============================================================
-    # -------- REMOVE EMPTY RECOMMENDATION GROUPS ---------------
-    # ============================================================
+    # Remove empty categories
     recommendations = {k: v for k, v in recommendations.items() if v}
 
-
     return {
-        "status": "success",
-        "risk_scores": risk_scores,
         "diseases": diseases,
-        "reasons": reasons,
         "recommendations": recommendations
     }
-
