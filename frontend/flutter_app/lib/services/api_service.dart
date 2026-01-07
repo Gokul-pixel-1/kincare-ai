@@ -2,11 +2,19 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class ApiService {
-  static Future<Map> predict(int age, double bmi, double sugar, double bp) async {
-    final url = Uri.parse("http://10.0.2.2:8000/predict");
-    final body = jsonEncode({"age": age, "bmi": bmi, "sugar": sugar, "bp": bp});
-
-    final res = await http.post(url, headers: {"Content-Type": "application/json"}, body: body);
+  static Future<Map> predictDisease({required String age, required String bmi, required String sugar, required String bp, required String region, required List family}) async {
+    var res = await http.post(
+      Uri.parse("http://localhost:8000/predict"),
+      headers: {"Content-Type": "application/json"},
+      body: jsonEncode({
+        "age": age,
+        "bmi": bmi,
+        "sugar": sugar,
+        "bp": bp,
+        "region": region,
+        "family_diseases": family,
+      }),
+    );
     return jsonDecode(res.body);
   }
 }
