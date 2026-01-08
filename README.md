@@ -1,3 +1,2 @@
-# kincare_doctor_app
-
-A new Flutter project.
+# kincare-ai
+Doctor decision support app for multi-disease prediction and recommendations
